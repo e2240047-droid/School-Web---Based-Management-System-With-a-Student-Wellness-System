@@ -1,18 +1,22 @@
 <?php
 session_start();
-include "../db.php";
+require_once __DIR__ . "/db.php";
 
-if (!isset($_SESSION["user_id"]) || $_SESSION["role"] != "admin") {
-    header("Location: ../login.php");
+// only admin can approve
+if (!isset($_SESSION["role"]) || $_SESSION["role"] !== "admin") {
+    header("Location: login.php");
     exit();
 }
 
-$id = intval($_GET["id"]);
+$id = isset($_GET["id"]) ? (int)$_GET["id"] : 0;
+if ($id <= 0) {
+    die("Invalid user id");
+}
 
+// update approval (change column name if yours is different)
 $stmt = $conn->prepare("UPDATE users SET is_approved=1 WHERE id=?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
 
 header("Location: users.php");
 exit();
-?>

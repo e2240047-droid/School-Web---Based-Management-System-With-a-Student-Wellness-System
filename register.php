@@ -1,3 +1,13 @@
+<?php
+require_once __DIR__ . "/db.php";
+
+// check if an admin already exists
+$adminExists = false;
+$res = $conn->query("SELECT id FROM users WHERE role='admin' LIMIT 1");
+if ($res && $res->num_rows > 0) {
+    $adminExists = true;
+}
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -35,15 +45,15 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Register As</label>
-            <select name="role" class="form-select" required>
-              <option value="">Select Role</option>
-              <option value="student">Student</option>
-              <option value="teacher">Teacher</option>
-              <option value="counsellor">Counsellor</option>
-              <option value="admin">Administrator</option>
-            </select>
-          </div>
+           <select name="role" class="form-select" required>
+  <option value="student">Student</option>
+  <option value="teacher">Teacher</option>
+  <option value="counsellor">Counsellor</option>
+
+  <?php if (!$adminExists): ?>
+    <option value="admin">Admin (Only one time)</option>
+  <?php endif; ?>
+</select>
 
           <div class="d-grid">
             <button type="submit" class="btn btn-success">Create Account</button>
