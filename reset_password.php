@@ -95,4 +95,4 @@ pass.addEventListener("input", function () {
 </script>
 
 </body>
-</html>
+</html>Ctrl + `

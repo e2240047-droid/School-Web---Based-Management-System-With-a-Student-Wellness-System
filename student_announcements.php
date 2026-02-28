@@ -1,124 +1,97 @@
 <?php
-require_once __DIR__ . "/auth.php";
-require_once __DIR__ . "/db.php";
+require_once "auth.php";
+require_once "db.php";
 
-if (!isset($_SESSION["role"]) || $_SESSION["role"] !== "student") {
-    header("Location: login.php");
-    exit();
+$search = $_GET["search"] ?? "";
+$category = $_GET["category"] ?? "";
+
+$sql = "SELECT * FROM announcements WHERE 1";
+
+if ($search != "") {
+    $sql .= " AND (title LIKE '%$search%' OR message LIKE '%$search%')";
 }
 
-$result = $conn->query("SELECT title, message, publish_date FROM announcements ORDER BY id DESC");
+if ($category != "" && $category != "All") {
+    $sql .= " AND category='$category'";
+}
+
+$sql .= " ORDER BY id DESC";
+
+$result = $conn->query($sql);
+
+// Latest announcement for popup
+$latest = $conn->query("SELECT * FROM announcements ORDER BY id DESC LIMIT 1")->fetch_assoc();
 ?>
+
 <!DOCTYPE html>
 <html>
 <head>
-  <title>School Announcements</title>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<title>School Announcements</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <style>
-    body{
-      background: linear-gradient(135deg,#e0f7ff,#fff0f7,#f3ffe3);
-      min-height: 100vh;
-      font-family: 'Segoe UI', sans-serif;
-    }
-    .hero{
-      background: linear-gradient(90deg,#0d6efd,#6f42c1,#d63384);
-      color:white;
-      border-radius: 22px;
-      padding: 20px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
-    }
-    .cardx{
-      border: 0;
-      border-radius: 20px;
-      background: rgba(255,255,255,0.88);
-      backdrop-filter: blur(8px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-      border: 1px solid rgba(255,255,255,0.6);
-      transition: transform .15s ease, box-shadow .15s ease;
-    }
-    .cardx:hover{
-      transform: translateY(-4px);
-      box-shadow: 0 14px 30px rgba(0,0,0,0.12);
-    }
-    .soft-btn{
-      border-radius: 14px;
-      font-weight: 800;
-    }
-    .date-badge{
-      font-size: 12px;
-      font-weight: 700;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: linear-gradient(135deg,#74c0fc,#4dabf7);
-      color:white;
-    }
-    .new-badge{
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: linear-gradient(135deg,#ff6b6b,#fa5252);
-      color:white;
-      margin-left: 8px;
-    }
-  </style>
+<style>
+body { background: linear-gradient(135deg,#e0f7ff,#fff0f7,#f3ffe3); }
+.cardx { border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,0.08); }
+</style>
 </head>
 
 <body>
-<div class="container py-4" style="max-width:1000px;">
+<div class="container py-4">
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <a href="student_dashboard.php" class="btn btn-outline-dark soft-btn">← Back</a>
+<h3 class="mb-3">📢 School Announcements</h3>
+
+<!-- SEARCH + FILTER -->
+<form method="get" class="row g-2 mb-4">
+  <div class="col-md-5">
+    <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" 
+           class="form-control" placeholder="Search announcements...">
   </div>
 
-  <!-- HERO HEADER -->
-  <div class="hero mb-4">
-    <h3 class="fw-bold mb-1">📢 School Announcements</h3>
-    <div class="small">Stay updated with important school news and updates 🌟</div>
+  <div class="col-md-3">
+    <select name="category" class="form-select">
+      <option value="All">All Categories</option>
+      <option value="General">General</option>
+      <option value="Exam">Exam</option>
+      <option value="Sports">Sports</option>
+      <option value="Events">Events</option>
+    </select>
   </div>
 
-  <?php if($result->num_rows === 0): ?>
-      <div class="alert alert-info">No announcements available.</div>
-  <?php endif; ?>
-
-  <div class="row g-3">
-
-  <?php 
-  $counter = 0;
-  while($row = $result->fetch_assoc()): 
-      $counter++;
-  ?>
-    <div class="col-md-6">
-      <div class="cardx p-4 h-100">
-
-        <div class="d-flex justify-content-between align-items-start mb-2">
-          <h5 class="fw-bold mb-0">
-            <?= htmlspecialchars($row["title"]) ?>
-            <?php if($counter <= 2): ?>
-              <span class="new-badge">NEW</span>
-            <?php endif; ?>
-          </h5>
-          <span class="date-badge">
-            <?= htmlspecialchars($row["publish_date"]) ?>
-          </span>
-        </div>
-
-        <p class="mt-3 mb-0">
-          <?= nl2br(htmlspecialchars($row["message"])) ?>
-        </p>
-
-      </div>
-    </div>
-  <?php endwhile; ?>
-
+  <div class="col-md-2">
+    <button class="btn btn-primary w-100">Filter</button>
   </div>
+</form>
 
-  <div class="text-center text-muted small mt-4">
-    Check announcements regularly to stay informed and prepared 🌈
-  </div>
+<div class="row g-3">
+
+<?php while($row = $result->fetch_assoc()): ?>
+<div class="col-md-6">
+<div class="card cardx p-3">
+
+<h5><?= htmlspecialchars($row["title"]) ?></h5>
+<small class="text-muted"><?= $row["publish_date"] ?> | <?= $row["category"] ?></small>
+
+<?php if($row["image"]): ?>
+<img src="uploads/<?= $row["image"] ?>" class="img-fluid rounded mt-2">
+<?php endif; ?>
+
+<p class="mt-2"><?= nl2br(htmlspecialchars($row["message"])) ?></p>
 
 </div>
+</div>
+<?php endwhile; ?>
+
+</div>
+</div>
+
+<!-- POPUP -->
+<?php if($latest): ?>
+<script>
+window.onload = function(){
+  alert("📢 Latest Announcement:\n\n<?= addslashes($latest["title"]) ?>");
+};
+</script>
+<?php endif; ?>
+
 </body>
 </html>
