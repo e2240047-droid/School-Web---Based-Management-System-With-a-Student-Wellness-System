@@ -1,7 +1,7 @@
 <?php
 session_start();
-session_unset();      // remove all session variables
-session_destroy();    // destroy session
+$_SESSION = [];
+session_destroy();
 header("Location: login.php");
 exit();
 ?>
