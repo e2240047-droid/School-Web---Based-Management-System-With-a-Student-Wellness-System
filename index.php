@@ -22,7 +22,7 @@
       <div class="container-fluid">
         <a class="navbar-brand d-flex align-items-center fw-bold fs-4" href="#">
           <img src="logo.png" width="42" class="me-2 rounded-circle bg-white p-1" alt="Logo">
-          Y School Wellness
+          Yasodara College
         </a>
 
         <button class="navbar-toggler border-0 shadow-none" type="button"
@@ -49,10 +49,9 @@
     <section class="hero-section mt-4 rounded-4 shadow-lg overflow-hidden">
       <div class="row g-0 align-items-center">
         <div class="col-lg-7 p-5">
-          <span class="hero-badge mb-3 d-inline-block">School Web-Based Management System</span>
           <h1 class="display-4 fw-bold text-white mb-3">
-            Smarter School Management
-            <span class="text-highlight d-block">With Student Wellness Support</span>
+            School Web-Based Management System
+            <span class="text-highlight d-block">With A Student Wellness Support</span>
           </h1>
 
           <p class="lead text-white-50 mb-4">
