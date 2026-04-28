@@ -51,7 +51,7 @@
         <div class="col-lg-7 p-5">
           <h1 class="display-4 fw-bold text-white mb-3">
             School Web-Based Management System
-            <span class="text-highlight d-block">With A Student Wellness Support</span>
+            <span class="text-highlight d-block">With A Student Wellness System</span>
           </h1>
 
           <p class="lead text-white-50 mb-4">

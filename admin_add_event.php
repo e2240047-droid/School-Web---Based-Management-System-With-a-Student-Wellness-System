@@ -1,132 +1,202 @@
 <?php
 ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 session_start();
 require_once __DIR__ . "/db.php";
 
-if (!isset($_SESSION["user_id"]) || ($_SESSION["role"] ?? "") !== "admin") {
+// allow only admin
+if (!isset($_SESSION["role"]) || $_SESSION["role"] !== "admin") {
     header("Location: login.php");
     exit();
 }
 
 $msg = "";
+$edit_event = null;
 
+/* =========================
+   DELETE EVENT
+========================= */
+if (isset($_GET["delete"])) {
+    $id = (int)$_GET["delete"];
+
+    // delete image
+    $res = $conn->query("SELECT image FROM events WHERE id=$id");
+    if ($row = $res->fetch_assoc()) {
+        if (!empty($row["image"])) {
+            $path = "uploads/" . $row["image"];
+            if (file_exists($path)) unlink($path);
+        }
+    }
+
+    $conn->query("DELETE FROM events WHERE id=$id");
+
+    header("Location: admin_events.php");
+    exit();
+}
+
+/* =========================
+   LOAD FOR EDIT
+========================= */
+if (isset($_GET["edit"])) {
+    $id = (int)$_GET["edit"];
+    $res = $conn->query("SELECT * FROM events WHERE id=$id");
+    $edit_event = $res->fetch_assoc();
+}
+
+/* =========================
+   ADD / UPDATE EVENT
+========================= */
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
-    $title = trim($_POST["title"] ?? "");
-    $description = trim($_POST["description"] ?? "");
-    $event_date = $_POST["event_date"] ?? "";
+    $event_id = (int)($_POST["event_id"] ?? 0);
+    $title = trim($_POST["title"]);
+    $description = trim($_POST["description"]);
+    $event_date = $_POST["event_date"];
 
-    if ($title === "" || $description === "" || $event_date === "") {
-        $msg = "All fields are required.";
-    } else {
+    $imageName = $_POST["old_image"] ?? "";
 
-        $imageName = null;
+    // upload new image
+    if (!empty($_FILES["image"]["name"])) {
 
-        // ✅ Upload image (optional)
-        if (!empty($_FILES["image"]["name"])) {
-
-            // create uploads folder if not exist
-            $uploadDir = __DIR__ . "/uploads/";
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
-
-            $imageName = time() . "_" . basename($_FILES["image"]["name"]);
-            move_uploaded_file($_FILES["image"]["tmp_name"], $uploadDir . $imageName);
+        if (!empty($imageName)) {
+            $old = "uploads/" . $imageName;
+            if (file_exists($old)) unlink($old);
         }
 
-        $stmt = $conn->prepare("INSERT INTO events (title, description, event_date, image) VALUES (?,?,?,?)");
-        $stmt->bind_param("ssss", $title, $description, $event_date, $imageName);
-        $stmt->execute();
+        if (!is_dir("uploads")) mkdir("uploads", 0777, true);
 
-        $msg = "✅ Event added successfully!";
+        $imageName = time() . "_" . basename($_FILES["image"]["name"]);
+        move_uploaded_file($_FILES["image"]["tmp_name"], "uploads/" . $imageName);
     }
+
+    if ($event_id > 0) {
+        // UPDATE
+        $stmt = $conn->prepare("
+            UPDATE events 
+            SET title=?, description=?, event_date=?, image=? 
+            WHERE id=?
+        ");
+        $stmt->bind_param("ssssi", $title, $description, $event_date, $imageName, $event_id);
+        $msg = "Event updated successfully!";
+    } else {
+        // INSERT
+        $stmt = $conn->prepare("
+            INSERT INTO events (title, description, event_date, image)
+            VALUES (?, ?, ?, ?)
+        ");
+        $stmt->bind_param("ssss", $title, $description, $event_date, $imageName);
+        $msg = "Event added successfully!";
+    }
+
+    $stmt->execute();
 }
+
+/* =========================
+   FETCH EVENTS
+========================= */
+$result = $conn->query("SELECT * FROM events ORDER BY event_date DESC");
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Add Event</title>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<title>Admin Events</title>
 
-  <style>
-    body{
-      background: linear-gradient(135deg,#e0f7ff,#fff0f7,#f3ffe3);
-      min-height: 100vh;
-      font-family: 'Segoe UI', sans-serif;
-    }
-    .hero{
-      background: linear-gradient(90deg,#0d6efd,#6f42c1,#d63384);
-      color:white;
-      border-radius: 22px;
-      padding: 18px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
-    }
-    .cardx{
-      border:0;
-      border-radius: 20px;
-      background: rgba(255,255,255,0.90);
-      backdrop-filter: blur(8px);
-      box-shadow: 0 12px 25px rgba(0,0,0,0.10);
-      border: 1px solid rgba(255,255,255,0.6);
-    }
-    .soft-btn{
-      border-radius: 14px;
-      font-weight: 800;
-    }
-  </style>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{
+background:linear-gradient(135deg,#e0f7ff,#fff0f7,#f3ffe3);
+font-family:'Segoe UI',sans-serif;
+}
+.cardx{
+border-radius:20px;
+background:white;
+box-shadow:0 12px 25px rgba(0,0,0,0.1);
+}
+.soft-btn{
+border-radius:14px;
+font-weight:800;
+}
+.event-img{
+width:100%;
+max-height:180px;
+object-fit:cover;
+}
+</style>
 </head>
 
 <body>
 
-<div class="container py-4" style="max-width: 850px;">
+<div class="container py-4" style="max-width:1000px;">
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <a href="admin_dashboard.php" class="btn btn-outline-dark soft-btn">← Back</a>
-    <a href="logout.php" class="btn btn-danger soft-btn">Logout</a>
-  </div>
+<div class="d-flex justify-content-between mb-3">
+<a href="admin_dashboard.php" class="btn btn-dark">← Back</a>
+<h4>🎉 Admin Events</h4>
+<a href="logout.php" class="btn btn-danger">Logout</a>
+</div>
 
-  <div class="hero mb-4">
-    <h3 class="fw-bold mb-1">🎉 Add New Event</h3>
-    <div class="small">Create school events students can view 🌟</div>
-  </div>
+<?php if($msg): ?>
+<div class="alert alert-success"><?= $msg ?></div>
+<?php endif; ?>
 
-  <?php if($msg): ?>
-    <div class="alert alert-info"><?= htmlspecialchars($msg) ?></div>
-  <?php endif; ?>
+<!-- FORM -->
+<div class="cardx p-4 mb-4">
 
-  <div class="cardx p-4">
-    <form method="post" enctype="multipart/form-data">
+<h5><?= $edit_event ? "Edit Event" : "Add Event" ?></h5>
 
-      <div class="mb-3">
-        <label class="form-label fw-bold">Event Title</label>
-        <input type="text" name="title" class="form-control" required>
-      </div>
+<form method="post" enctype="multipart/form-data">
 
-      <div class="mb-3">
-        <label class="form-label fw-bold">Event Description</label>
-        <textarea name="description" class="form-control" rows="4" required></textarea>
-      </div>
+<input type="hidden" name="event_id" value="<?= $edit_event["id"] ?? 0 ?>">
+<input type="hidden" name="old_image" value="<?= $edit_event["image"] ?? "" ?>">
 
-      <div class="mb-3">
-        <label class="form-label fw-bold">Event Date</label>
-        <input type="date" name="event_date" class="form-control" required>
-      </div>
+<input class="form-control mb-2" name="title"
+value="<?= $edit_event["title"] ?? "" ?>" placeholder="Title" required>
 
-      <div class="mb-3">
-        <label class="form-label fw-bold">Event Image (optional)</label>
-        <input type="file" name="image" class="form-control" accept="image/*">
-      </div>
+<textarea class="form-control mb-2" name="description" required><?= $edit_event["description"] ?? "" ?></textarea>
 
-      <button class="btn btn-success w-100 soft-btn">✅ Add Event</button>
-    </form>
-  </div>
+<input type="date" name="event_date" class="form-control mb-2"
+value="<?= $edit_event["event_date"] ?? "" ?>" required>
+
+<input type="file" name="image" class="form-control mb-2">
+
+<button class="btn btn-success w-100">
+<?= $edit_event ? "Update Event" : "Add Event" ?>
+</button>
+
+</form>
+</div>
+
+<!-- LIST -->
+<div class="row">
+
+<?php while($row = $result->fetch_assoc()): ?>
+
+<div class="col-md-6 mb-3">
+<div class="card p-3">
+
+<?php if($row["image"]): ?>
+<img src="uploads/<?= $row["image"] ?>" class="event-img mb-2">
+<?php endif; ?>
+
+<h5><?= $row["title"] ?></h5>
+<small><?= $row["event_date"] ?></small>
+
+<p><?= $row["description"] ?></p>
+
+<div class="d-flex justify-content-end gap-2">
+<a href="?edit=<?= $row["id"] ?>" class="btn btn-warning btn-sm">Edit</a>
+<a href="?delete=<?= $row["id"] ?>" class="btn btn-danger btn-sm"
+onclick="return confirm('Delete this event?')">Delete</a>
+</div>
+
+</div>
+</div>
+
+<?php endwhile; ?>
+
+</div>
 
 </div>
 
