@@ -190,10 +190,10 @@ $name = $_SESSION["name"] ?? "Student";
       </div>
     </div>
 
-    <!-- chat -->
+    <!-- anonymous chat (UPDATED) -->
     <div class="col-12 col-md-6 col-lg-4">
       <div class="cardx">
-        <div class="cardTop g-red">Chat 💬</div>
+        <div class="cardTop g-red">Anonymous Chat 💬</div>
         <div class="cardBody">
           <p>Chat privately with counsellor.</p>
           <a href="student_chat.php" class="btn btn-danger w-100">Start Chat</a>
