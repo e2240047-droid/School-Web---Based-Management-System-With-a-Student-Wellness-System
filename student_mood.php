@@ -6,6 +6,9 @@ error_reporting(E_ALL);
 // include authentication and database connection
 require_once __DIR__ . "/auth.php";
 require_once __DIR__ . "/db.php";
+require_once "calculate_risk.php";
+$stmt->execute();
+calculateRisk($student_id,$conn);
 
 // check if the user is a logged-in student
 if (!isset($_SESSION["role"]) || $_SESSION["role"] !== "student") {

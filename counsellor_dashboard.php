@@ -54,11 +54,11 @@ try {
 }
 
 /* ----------------------------------------------------------------------
-   AI Wellness Risk Detection Query (With Anonymous Chat Join Extraction)
+   AI Wellness Risk Detection Query (Modified to extract student_id)
 ---------------------------------------------------------------------- */
 $riskStudents = $conn->query("
     SELECT
-        u.name,
+        wr.student_id,
         wr.risk_score,
         wr.risk_level,
         ac.id AS chat_id
@@ -176,7 +176,8 @@ $riskStudents = $conn->query("
           <?php if ($riskStudents && $riskStudents->num_rows > 0): ?>
             <?php while ($row = $riskStudents->fetch_assoc()): ?>
               <tr>
-                <td class="fw-semibold"><?= htmlspecialchars($row["name"]) ?></td>
+                <!-- UNIFIED ANONYMOUS SYSTEM ID MASK INTERCEPT TIER -->
+                <td class="fw-semibold">Anonymous Student #<?= (int)$row["student_id"] ?></td>
                 <td><?= (int)$row["risk_score"] ?></td>
                 <td><?= riskBadge($row["risk_level"]) ?></td>
                 <td class="text-center">

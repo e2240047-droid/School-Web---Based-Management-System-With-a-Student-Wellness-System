@@ -13,11 +13,10 @@ if (!isset($_SESSION["role"]) || $_SESSION["role"] !== "student") {
 }
 
 $student_id = (int)($_SESSION["user_id"] ?? 0);
-$name = $_SESSION["name"] ?? "Student";
 $msg = "";
 
 /* ----------------------------------
-   Get or Create Active Chat Room
+   Get or Create Active Chat Room Bound strictly to logged-in student_id
 -----------------------------------*/
 $stmt = $conn->prepare("SELECT id FROM anonymous_chats WHERE student_id=? LIMIT 1");
 $stmt->bind_param("i", $student_id);
@@ -278,7 +277,7 @@ $riskResult = $riskCheck->get_result()->fetch_assoc();
 $currentRiskLevel = $riskResult["risk_level"] ?? "Low";
 
 /* ----------------------------------
-   Load History
+   Load History Bound to Correct Chat Room ID Context
 -----------------------------------*/
 $stmt3 = $conn->prepare("SELECT sender_role, message, file_path, file_type, created_at FROM anonymous_messages WHERE chat_id=? ORDER BY id ASC");
 $stmt3->bind_param("i", $chat_id);
@@ -441,8 +440,8 @@ function parseBotMarkdown($text) {
       <a href="student_dashboard.php" class="text-white fs-4 text-decoration-none"><i class="bi bi-arrow-left"></i></a>
       <div class="avatar-circle">🛡️</div>
       <div>
-        <!-- DYNAMIC SENDER NAME RECONNECT LAYER -->
-        <h6 class="mb-0 fw-bold">Support Room - <?= htmlspecialchars($name) ?></h6>
+        <!-- ANONYMIZED DISGUISE HEADER HIDING PLAINTEXT NAMES -->
+        <h6 class="mb-0 fw-bold">Support Room - Anonymized Profile</h6>
         <small class="opacity-75">Conversational AI & Counselor Gateway</small>
       </div>
     </div>
