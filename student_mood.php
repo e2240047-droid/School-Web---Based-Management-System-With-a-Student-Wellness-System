@@ -6,9 +6,6 @@ error_reporting(E_ALL);
 // include authentication and database connection
 require_once __DIR__ . "/auth.php";
 require_once __DIR__ . "/db.php";
-require_once "calculate_risk.php";
-$stmt->execute();
-calculateRisk($student_id,$conn);
 
 // check if the user is a logged-in student
 if (!isset($_SESSION["role"]) || $_SESSION["role"] !== "student") {
@@ -56,6 +53,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $stmt = $conn->prepare("INSERT INTO mood_logs (student_id, mood, note) VALUES (?,?,?)");
         $stmt->bind_param("iss", $student_id, $mood, $note);
         $stmt->execute();
+
+        // Run risk calculation after saving the new mood
+        require_once "calculate_risk.php";
+        calculateRisk($student_id, $conn);
 
         $success = "✅ Mood saved successfully!";
     }
